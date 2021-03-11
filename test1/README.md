@@ -47,11 +47,55 @@ HAVING d.department_name in ('IT','Sales');
 
 ![查询2结果](查询2结果.png)
 
-![查询2结果](查询2执行计划.png)
+![查询2执行计划](查询2执行计划.png)
 
-![查询2结果](查询2优化指导.png)
+![查询2优化指导](查询2优化指导.png)
 
 执行上面两个比较复杂的返回相同查询结果数据集的SQL语句，通过分析SQL语句各自的执行计划，判断哪个SQL语句是最优的。最后将你认为最优的SQL语句通过sqldeveloper的优化指导工具进行优化指导，看看该工具有没有给出优化建议
+
+**答**： 查询1的总代价2小于查询2的总代价5，查询1索引范围扫描10行，查询2全表扫描107行，综合来看查询1优于查询2。执行优化指导时，工具没有给出优化建议。
+
+## 自己的查询语句
+
+- 查询3
+```SQL
+SELECT
+	e.EMPLOYEE_ID,
+	e.FIRST_NAME,
+	e.MANAGER_ID,
+	( SELECT M.FIRST_NAME FROM HR.employees m WHERE m.EMPLOYEE_ID = e.MANAGER_ID ) AS MANAGER_NAME 
+FROM
+	HR.employees e 
+ORDER BY
+	e.EMPLOYEE_ID;
+```
+![查询3结果](查询3结果.png)
+
+![查询3执行计划](查询3执行计划.png)
+
+![查询3优化指导](查询3优化指导.png)
+- 查询4
+```SQL
+SELECT
+	e.EMPLOYEE_ID,
+	e.FIRST_NAME,
+	e.MANAGER_ID,
+	m.FIRST_NAME AS MANAGER_NAME 
+FROM
+	HR.employees e,
+	HR.employees m 
+WHERE
+	e.MANAGER_ID = m.EMPLOYEE_ID ( + ) 
+ORDER BY
+	e.EMPLOYEE_ID;
+```
+![查询4结果](查询4结果.png)
+
+![查询4执行计划](查询4执行计划.png)
+
+![查询4优化指导](查询4优化指导.png)
+
+**答**：查询3代价21大于查询4代价6，查询3用了子查询语句作为一个字段属性，每输出employees的一行都要再次查询一次该表，查询4优于查询3
 
 ## 实验参考地址
 
@@ -64,6 +108,10 @@ HAVING d.department_name in ('IT','Sales');
 ```
 
 怎样解决？
+
+**答**：普通用户不允许查询执行计划，必须有plustrace角色才可以。Oracle的插接式数据库本身并没有默认创建plustrace，所以需要首先    在pdborcl数据库中创建角色plustrace，方法是用sys登录到PDB数据库，然后运行$ORACLE_HOME/sqlplus/admin/plustrce.sql脚本文件，最后通过“GRANT plustrace to 用户名;”命令将plustrace赋予用户。
+
+普通用户通常没有SQL优化的权限，需要添加SELECT_CATALOG_ROLE、SELECT ANY DICTIONARY、ADVISOR 以及 ADMINISTER SQL TUNING SET 权限才可以进行优化指导。
 
 ## 实验注意事项，完成时间： 2021-3-17日前上交
 
